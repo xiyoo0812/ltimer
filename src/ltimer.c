@@ -204,16 +204,23 @@ int gettimeofday(struct timeval* tp, void* tzp){
     tp->tv_usec = wtm.wMilliseconds * 1000;
     return (0);
 }
+#define usleep Sleep 
 #else
 #include <sys/time.h>
 #endif
 
-static int lnowtime(lua_State* L) {
+static int ltime(lua_State* L) {
     struct timeval now;
     gettimeofday(&now, NULL);
-    lua_pushinteger(L, now.tv_sec);
     lua_pushinteger(L, now.tv_usec / 1000);
+    lua_pushinteger(L, now.tv_sec);
     return 2;
+}
+
+static int lsleep(lua_State* L) {
+    int ms = luaL_checkinteger(L, 1);
+    usleep(ms);
+    return 0;
 }
 
 #ifdef _MSC_VER
@@ -229,7 +236,8 @@ LTIMER_API int luaopen_ltimer(lua_State* L) {
         { "destory", ldestory },
         { "insert" , linsert },
         { "update", lupdate },
-        { "now", lnowtime },
+        { "sleep", lsleep },
+        { "time", ltime },
         { NULL, NULL },
     };
     luaL_newlib(L, l);
