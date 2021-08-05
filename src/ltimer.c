@@ -32,6 +32,15 @@ struct timer {
 
 static struct timer driver = { 0 };
 
+
+
+static inline struct timer_node* link_clear(struct link_list* list) {
+    struct timer_node* ret = list->head.next;
+    list->head.next = 0;
+    list->tail = &(list->head);
+    return ret;
+}
+
 static void timer_init() {
     int i, j;
     memset(&driver, 0, sizeof(struct timer));
@@ -45,14 +54,7 @@ static void timer_init() {
     }
 }
 
-static inline struct timer_node* link_clear(struct link_list* list) {
-    struct timer_node* ret = list->head.next;
-    list->head.next = 0;
-    list->tail = &(list->head);
-    return ret;
-}
-
-static inline void link(struct link_list* list, struct timer_node* node) {
+static inline void link_node(struct link_list* list, struct timer_node* node) {
     list->tail->next = node;
     list->tail = node;
     node->next = 0;
@@ -62,7 +64,7 @@ static void add_node(struct timer_node* node) {
     uint32_t time = node->expire;
     uint32_t current_time = driver.time;
     if ((time | TIME_NEAR_MASK) == (current_time | TIME_NEAR_MASK)) {
-        link(&driver.near[time & TIME_NEAR_MASK], node);
+        link_node(&driver.near[time & TIME_NEAR_MASK], node);
     }
     else {
         int i;
@@ -73,7 +75,7 @@ static void add_node(struct timer_node* node) {
             }
             mask <<= TIME_LEVEL_SHIFT;
         }
-        link(&driver.t[i][((time >> (TIME_NEAR_SHIFT + i * TIME_LEVEL_SHIFT)) & TIME_LEVEL_MASK)], node);
+        link_node(&driver.t[i][((time >> (TIME_NEAR_SHIFT + i * TIME_LEVEL_SHIFT)) & TIME_LEVEL_MASK)], node);
     }
 }
 
