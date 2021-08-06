@@ -212,13 +212,14 @@ int gettimeofday(struct timeval* tp, void* tzp){
 static int ltime(lua_State* L) {
     struct timeval now;
     gettimeofday(&now, NULL);
-    lua_pushinteger(L, now.tv_usec / 1000);
+    uint64_t now_ms = (uint64_t)now.tv_sec * 1000 + now.tv_usec / 1000;
+    lua_pushinteger(L, now_ms);
     lua_pushinteger(L, now.tv_sec);
     return 2;
 }
 
 static int lsleep(lua_State* L) {
-    int ms = luaL_checkinteger(L, 1);
+    size_t ms = luaL_checkinteger(L, 1);
     usleep(ms);
     return 0;
 }
