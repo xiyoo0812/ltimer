@@ -206,6 +206,7 @@ int gettimeofday(struct timeval* tp, void* tzp){
 }
 #define usleep Sleep 
 #else
+#include<unistd.h>
 #include <sys/time.h>
 #endif
 
