@@ -13,29 +13,27 @@
 #define TIME_NEAR_MASK (TIME_NEAR-1)
 #define TIME_LEVEL_MASK (TIME_LEVEL-1)
 
-struct timer_node {
+typedef struct timer_node {
     struct timer_node* next;
     uint32_t expire;
     uint64_t timer_id;
-};
+} timer_node_t;
 
-struct link_list {
-    struct timer_node head;
-    struct timer_node* tail;
-};
+typedef struct link_list {
+    timer_node_t head;
+    timer_node_t* tail;
+} link_list_t;
 
-struct timer {
+typedef struct timer {
     uint32_t time;
-    struct link_list near[TIME_NEAR];
-    struct link_list t[4][TIME_LEVEL];
-};
+    link_list_t near[TIME_NEAR];
+    link_list_t t[4][TIME_LEVEL];
+} timer_t;
 
-static struct timer driver = { 0 };
+static timer_t driver = { 0 };
 
-
-
-static inline struct timer_node* link_clear(struct link_list* list) {
-    struct timer_node* ret = list->head.next;
+static inline timer_node_t* link_clear(link_list_t* list) {
+    timer_node_t* ret = list->head.next;
     list->head.next = 0;
     list->tail = &(list->head);
     return ret;
@@ -43,7 +41,7 @@ static inline struct timer_node* link_clear(struct link_list* list) {
 
 static void timer_init() {
     int i, j;
-    memset(&driver, 0, sizeof(struct timer));
+    memset(&driver, 0, sizeof(timer_t));
     for (i = 0; i < TIME_NEAR; i++) {
         link_clear(&driver.near[i]);
     }
@@ -54,13 +52,13 @@ static void timer_init() {
     }
 }
 
-static inline void link_node(struct link_list* list, struct timer_node* node) {
+static inline void link_node(link_list_t* list, timer_node_t* node) {
     list->tail->next = node;
     list->tail = node;
     node->next = 0;
 }
 
-static void add_node(struct timer_node* node) {
+static void add_node(timer_node_t* node) {
     uint32_t time = node->expire;
     uint32_t current_time = driver.time;
     if ((time | TIME_NEAR_MASK) == (current_time | TIME_NEAR_MASK)) {
@@ -80,7 +78,7 @@ static void add_node(struct timer_node* node) {
 }
 
 static void timer_add(uint64_t timer_id, int time) {
-    struct timer_node* node = (struct timer_node*)malloc(sizeof(*node));
+    timer_node_t* node = (timer_node_t*)malloc(sizeof(*node));
     if (time < 0)
         time = 0;
     node->timer_id = timer_id;
@@ -89,9 +87,9 @@ static void timer_add(uint64_t timer_id, int time) {
 }
 
 static void move_list(int level, int idx) {
-    struct timer_node* current = link_clear(&driver.t[level][idx]);
+    timer_node_t* current = link_clear(&driver.t[level][idx]);
     while (current) {
-        struct timer_node* temp = current->next;
+        timer_node_t* temp = current->next;
         add_node(current);
         current = temp;
     }
@@ -119,19 +117,19 @@ static void timer_shift() {
     }
 }
 
-static inline void link_free(struct link_list* list) {
-    struct timer_node* current = link_clear(list);
+static inline void link_free(link_list_t* list) {
+    timer_node_t* current = link_clear(list);
     while (current) {
-        struct timer_node* temp = current;
+        timer_node_t* temp = current;
         current = current->next;
         free(temp);
     }
     link_clear(list);
 }
 
-static inline void dispatch_list(lua_State* L, struct timer_node* current, int* n) {
+static inline void dispatch_list(lua_State* L, timer_node_t* current, int* n) {
     do {
-        struct timer_node* temp = current;
+        timer_node_t* temp = current;
         current = current->next;
 
         ++* n;
@@ -145,7 +143,7 @@ static inline void dispatch_list(lua_State* L, struct timer_node* current, int* 
 static void timer_execute(lua_State* L, int* n) {
     int idx = driver.time & TIME_NEAR_MASK;
     while (driver.near[idx].head.next) {
-        struct timer_node* current = link_clear(&driver.near[idx]);
+        timer_node_t* current = link_clear(&driver.near[idx]);
         dispatch_list(L, current, n);
     }
 }
