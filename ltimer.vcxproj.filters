@@ -3,7 +3,7 @@
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src/ltimer.c">
+    <ClCompile Include="src\ltimer.c">
       <Filter>src</Filter>
     </ClCompile>
   </ItemGroup>
