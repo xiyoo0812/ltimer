@@ -9,7 +9,7 @@
   <ItemGroup>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\ltimer.c" />
+    <ClCompile Include="src\ltimer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2DE9C09F-02F5-DF2B-524C-FFBEBC8DE5EE}</ProjectGuid>
