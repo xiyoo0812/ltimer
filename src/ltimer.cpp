@@ -69,7 +69,8 @@ void lua_timer::add_node(timer_node& node) {
 }
 
 void lua_timer::add_timer(uint64_t timer_id, size_t escape) {
-    add_node(timer_node { time + (escape < 0 ? 0 : escape), timer_id });
+    timer_node node{ time + (escape < 0 ? 0 : escape), timer_id };
+    add_node(node);
 }
 
 void lua_timer::move_list(uint32_t level, uint32_t idx) {
