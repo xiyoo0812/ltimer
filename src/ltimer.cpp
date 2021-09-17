@@ -69,7 +69,7 @@ void lua_timer::add_node(timer_node& node) {
 }
 
 void lua_timer::add_timer(uint64_t timer_id, size_t escape) {
-    timer_node node{ time + (escape < 0 ? 0 : escape), timer_id };
+    timer_node node{ time + escape, timer_id };
     add_node(node);
 }
 
