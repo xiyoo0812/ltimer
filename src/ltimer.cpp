@@ -15,6 +15,8 @@ extern "C"
 #define TIME_NEAR_MASK (TIME_NEAR-1)
 #define TIME_LEVEL_MASK (TIME_LEVEL-1)
 
+#define LUA_TIMER_META  "_LUA_TIMER_META"
+
 struct timer_node {
     size_t expire;
     uint64_t timer_id;
@@ -25,12 +27,12 @@ typedef std::list<timer_node> timer_list;
 class lua_timer {
 public:
     void shift();
-    void move_list(uint32_t level, uint32_t idx);
-    void add_timer(uint64_t timer_id, size_t escape);
     void execute(lua_State* L, uint32_t& size);
+    void add_timer(uint64_t timer_id, size_t escape);
 
 protected:
     void reset();
+    void move_list(uint32_t level, uint32_t idx);
     void add_node(timer_node& node);
 
 protected:
@@ -112,37 +114,36 @@ void lua_timer::execute(lua_State* L, uint32_t& size) {
     near[idx].clear();
 }
 
-static int ldestory(lua_State* L) {
-    lua_timer* driver = (lua_timer*)lua_touserdata(L, 1);
-    if (driver) {
-        delete driver;
-        driver = nullptr;
-    }
-    return 0;
-}
-
 static int linsert(lua_State* L) {
-    lua_timer* driver = (lua_timer*)lua_touserdata(L, 1);
-    if (driver) {
+    lua_timer* ltimer = *(lua_timer**)luaL_checkudata(L, 1, LUA_TIMER_META);
+    if (ltimer) {
         uint64_t timer_id = luaL_checkinteger(L, 2);
         size_t escape = luaL_checkinteger(L, 3);
-        driver->add_timer(timer_id, escape);
+        ltimer->add_timer(timer_id, escape);
     }
     return 0;
 }
 
 static int lupdate(lua_State* L) {
-    lua_timer* driver = (lua_timer*)lua_touserdata(L, 1);
-    if (driver) {
+    lua_timer* ltimer = *(lua_timer**)luaL_checkudata(L, 1, LUA_TIMER_META);
+    if (ltimer) {
         size_t elapse = luaL_checkinteger(L, 2);
         lua_newtable(L);
         uint32_t size = 0;
-        driver->execute(L, size);
+        ltimer->execute(L, size);
         for (size_t i = 0; i < elapse; i++) {
-            driver->shift();
-            driver->execute(L, size);
+            ltimer->shift();
+            ltimer->execute(L, size);
         }
         return 1;
+    }
+    return 0;
+}
+
+static int ltimer_gc(lua_State* L) {
+    lua_timer* ltimer = *(lua_timer**)luaL_checkudata(L, 1, LUA_TIMER_META);
+    if (ltimer) {
+        delete ltimer;
     }
     return 0;
 }
@@ -191,25 +192,39 @@ static int lsleep(lua_State* L) {
 #define LTIMER_API extern "C"
 #endif
 
+luaL_Reg ltimer[] = {
+    { "insert" , linsert },
+    { "update", lupdate },
+    { "__gc", ltimer_gc }
+};
+
+static int lcreate_timer(lua_State* L) {
+    lua_timer** ptimer = (lua_timer**)lua_newuserdata(L, sizeof(lua_timer*));
+    if (luaL_getmetatable(L, LUA_TIMER_META) != LUA_TTABLE) {
+        lua_pop(L, 1);
+        luaL_newmetatable(L, LUA_TIMER_META);
+        luaL_setfuncs(L, ltimer, 0);
+        lua_pushvalue(L, -1);
+        lua_setfield(L, -2, "__index");
+    }
+    *ptimer = new lua_timer();
+    lua_setmetatable(L, -2);
+    return 1;
+}
+
+luaL_Reg ltimer_func[] = {
+    { "now", lnow },
+    { "time", ltime },
+    { "sleep", lsleep },
+    { "now_ms", lnow_ms },
+    { "steady", lsteady },
+    { "steady_ms", lsteady_ms },
+    { "create", lcreate_timer },
+    { NULL, NULL },
+};
+
 LTIMER_API int luaopen_ltimer(lua_State* L) {
     luaL_checkversion(L);
-    lua_timer* timer = new lua_timer();
-    lua_pushlightuserdata(L, timer);
-    luaL_newmetatable(L, "__LUA_TIMER__");
-    luaL_Reg ltimer[] = {
-        { "now", lnow },
-        { "time", ltime },
-        { "now_ms", lnow_ms },
-        { "steady", lsteady },
-        { "steady_ms", lsteady_ms },
-        { "sleep", lsleep },
-        { "update", lupdate },
-        { "insert" , linsert },
-        { "destory", ldestory },
-        { NULL, NULL },
-    };
-    luaL_newlib(L, ltimer);
-    lua_setfield(L, -2, "__index");
-    lua_setmetatable(L, -2);
+    luaL_newlib(L, ltimer_func);
     return 1;
 }
