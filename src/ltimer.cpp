@@ -192,10 +192,11 @@ static int lsleep(lua_State* L) {
 #define LTIMER_API extern "C"
 #endif
 
-luaL_Reg ltimer[] = {
+static const luaL_Reg ltimer[] = {
     { "insert" , linsert },
     { "update", lupdate },
-    { "__gc", ltimer_gc }
+    { "__gc", ltimer_gc },
+    { NULL, NULL }
 };
 
 static int lcreate_timer(lua_State* L) {
