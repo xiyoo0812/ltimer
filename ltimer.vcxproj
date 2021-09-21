@@ -7,9 +7,10 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ltimer\ltimer.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\ltimer.cpp" />
+    <ClCompile Include="ltimer\ltimer.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{2DE9C09F-02F5-DF2B-524C-FFBEBC8DE5EE}</ProjectGuid>
@@ -42,7 +43,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Develop|x64'">
     <ClCompile>
       <Optimization>Disabled</Optimization>
-      <AdditionalIncludeDirectories>../lua/lua;$(SolutionDir)extend/mimalloc/mimalloc/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../lua/lua;../sol2/include;$(SolutionDir)extend/mimalloc/mimalloc/include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>

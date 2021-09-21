@@ -9,8 +9,12 @@ PROJECT_TYPE = "dynamic"
 
 --需要的include目录
 INCLUDES = {
-	"../lua/lua"
+	"../lua/lua",
+	"../sol2/include"
 }
+
+--源文件路径
+SRC_DIR = "ltimer"
 
 --需要连接的库文件
 LIBS = {
