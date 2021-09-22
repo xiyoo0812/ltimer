@@ -7,8 +7,8 @@
 - 项目路径如下<br>
   |--proj <br>
   &emsp;|--lua <br>
-  &emsp;|--ltimer
-  &emsp;|--sol2
+  &emsp;|--ltimer <br>
+  &emsp;|--sol2 <br>
 
 # 编译
 - msvc: 准备好lua依赖库并放到指定位置，将proj文件加到sln后编译。
