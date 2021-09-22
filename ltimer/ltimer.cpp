@@ -52,7 +52,7 @@ void lua_timer::add_node(timer_node& node) {
         if ((expire | (mask - 1)) == (time | (mask - 1))) {
             break;
         }
-        expire <<= TIME_LEVEL_SHIFT;
+        mask <<= TIME_LEVEL_SHIFT;
     }
     t[i][((expire >> (TIME_NEAR_SHIFT + i * TIME_LEVEL_SHIFT)) & TIME_LEVEL_MASK)].push_back(node);
 }
@@ -103,8 +103,8 @@ uint64_vec lua_timer::update(size_t elapse) {
     uint64_vec timers;
     execute(timers);
     for (size_t i = 0; i < elapse; i++) {
-        execute(timers);
         shift();
+        execute(timers);
     }
     return timers;
 }
