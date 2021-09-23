@@ -125,7 +125,7 @@ LTIMER_API int luaopen_ltimer(lua_State* L) {
     luatimer.set_function("steady_ms", []() { return steady_ms(); });
     luatimer.set_function("sleep", [](uint64_t ms) { return sleep(ms); });
     luatimer.set_function("time", []() { return sol::as_returns(uint64_vec({ now_ms(), now() })); });
-    lua.new_usertype<lua_timer>("lua_timer"
+    luatimer.new_usertype<lua_timer>("lua_timer"
         , "insert", &lua_timer::insert
         , "update", &lua_timer::update
     );
