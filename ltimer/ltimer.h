@@ -23,8 +23,7 @@ namespace ltimer {
 
 	inline uint64_t steady_ms() {
 		steady_clock::duration dur = steady_clock::now().time_since_epoch();
-		return duration_cast<seconds>(dur).count();
-		return 1;
+		return duration_cast<milliseconds>(dur).count();
 	}
 
 	inline void sleep(uint64_t ms) {
