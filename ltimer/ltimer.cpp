@@ -130,6 +130,8 @@ namespace ltimer {
     }
 }
 
-extern "C" LUALIB_API int luaopen_ltimer(lua_State* L) {
-    return sol::stack::call_lua(L, 1, ltimer::open_ltimer);
+extern "C" {
+    LUALIB_API int luaopen_ltimer(lua_State* L) {
+        return sol::stack::call_lua(L, 1, ltimer::open_ltimer);
+    }
 }
