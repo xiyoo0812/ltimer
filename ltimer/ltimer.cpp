@@ -1,9 +1,11 @@
+#define LUA_LIB
+
 #include <list>
 #include "ltimer.h"
 
 #include "sol/sol.hpp"
 
-extern "C"{
+extern "C" {
     #include <lua.h>
     #include <lauxlib.h>
 }
@@ -128,12 +130,6 @@ namespace ltimer {
     }
 }
 
-#ifdef _MSC_VER
-#define LTIMER_API extern "C" _declspec(dllexport)
-#else
-#define LTIMER_API extern "C"
-#endif
-
-LTIMER_API int luaopen_ltimer(lua_State* L) {
+extern "C" LUALIB_API int luaopen_ltimer(lua_State* L) {
     return sol::stack::call_lua(L, 1, ltimer::open_ltimer);
 }
