@@ -3,12 +3,12 @@
 
 # 依赖
 - [lua](https://github.com/xiyoo0812/lua.git)5.2以上
-- sol2: 一个luabind库
+- [luakit](https://github.com/xiyoo0812/luakit.git)一个luabind库
 - 项目路径如下<br>
   |--proj <br>
   &emsp;|--lua <br>
   &emsp;|--ltimer <br>
-  &emsp;|--sol2 <br>
+  &emsp;|--luakit <br>
 
 # 编译
 - msvc: 准备好lua依赖库并放到指定位置，将proj文件加到sln后编译。
@@ -26,13 +26,13 @@ local ipairs    = ipairs
 local ltime     = ltimer.time
 local tpack     = table.pack
 local tunpack   = table.unpack
-local tinsert   = table.insert
 local new_guid  = lcrypt.guid_new
 
 --定时器精度，20ms
 local TIMER_ACCURYACY = 20
 
-local thread_mgr = quanta.get("thread_mgr")
+local driver        = ltimer.new()
+local thread_mgr    = quanta.get("thread_mgr")
 
 local TimerMgr = singleton()
 local prop = property(TimerMgr)
@@ -60,21 +60,24 @@ function TimerMgr:trigger(handle, now_ms)
         return
     end
     --继续注册
-    ltimer:insert(handle.timer_id, handle.period)
+    driver.insert(handle.timer_id, handle.period)
 end
 
-function TimerMgr:update(now_ms)
-    local timers = {}
-    local escape_ms = now_ms - self.last_ms + self.escape_ms
-    self.escape_ms = escape_ms % TIMER_ACCURYACY
-    ltimer:update(escape_ms // TIMER_ACCURYACY, timers)
-    for _, timer_id in ipairs(timers) do
-        local handle = self.timers[timer_id]
-        if handle then
-            self:trigger(handle, now_ms)
+function TimerMgr:on_frame(now_ms)
+    if driver then
+        local escape_ms = now_ms - self.last_ms + self.escape_ms
+        self.escape_ms = escape_ms % TIMER_ACCURYACY
+        self.last_ms = now_ms
+        if escape_ms >= TIMER_ACCURYACY then
+            local timers = driver.update(escape_ms // TIMER_ACCURYACY)
+            for _, timer_id in ipairs(timers or {}) do
+                local handle = self.timers[timer_id]
+                if handle then
+                    self:trigger(handle, now_ms)
+                end
+            end
         end
     end
-    self.last_ms = now_ms
 end
 
 function TimerMgr:once(period, cb, ...)
@@ -91,10 +94,10 @@ function TimerMgr:register(interval, period, times, cb, ...)
     local timer_id = new_guid(period, interval)
     --矫正时间误差
     interval = interval + (now_ms - self.last_ms)
-    ltimer:insert(timer_id, interval // TIMER_ACCURYACY)
+    driver.insert(timer_id, interval // TIMER_ACCURYACY)
     --包装回调参数
     local params = tpack(...)
-    tinsert(params, 0)
+    params[#params + 1] = 0
     --保存信息
     self.timers[timer_id] = {
         cb = cb,
@@ -111,14 +114,13 @@ function TimerMgr:unregister(timer_id)
     self.timers[timer_id] = nil
 end
 
-function TimerMgr:quit()
+function TimerMgr:on_quit()
     self.timers = {}
-    ltimer:destory()
+    driver = nil
 end
 
 quanta.timer_mgr = TimerMgr()
 
 return TimerMgr
-
 
 ```

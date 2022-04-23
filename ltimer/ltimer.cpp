@@ -2,13 +2,7 @@
 
 #include <list>
 #include "ltimer.h"
-
-#include "sol/sol.hpp"
-
-extern "C" {
-    #include <lua.h>
-    #include <lauxlib.h>
-}
+#include "lua_kit.h"
 
 #define TIME_NEAR_SHIFT     8
 #define TIME_LEVEL_SHIFT    6
@@ -29,7 +23,7 @@ namespace ltimer {
 
     class lua_timer {
     public:
-        integer_vector update(size_t elapse);
+        luakit::reference update(lua_State* L, size_t elapse);
         void insert(uint64_t timer_id, size_t escape);
 
     protected:
@@ -103,35 +97,42 @@ namespace ltimer {
         near[idx].clear();
     }
 
-    integer_vector lua_timer::update(size_t elapse) {
+    luakit::reference lua_timer::update(lua_State* L, size_t elapse) {
         integer_vector timers;
         execute(timers);
         for (size_t i = 0; i < elapse; i++) {
             shift();
             execute(timers);
         }
-        return timers;
+        luakit::kit_state kit_state(L);
+        return kit_state.new_reference<integer_vector, uint64_t>(timers);
     }
 
-    sol::table open_ltimer(sol::this_state L) {
-        sol::state_view lua(L);
-        auto luatimer = lua.create_table();
+    luakit::lua_table open_ltimer(lua_State* L) {
+        luakit::kit_state kit_state(L);
+        auto luatimer = kit_state.new_table();
+        kit_state.new_class<lua_timer>("insert", &lua_timer::insert, "update", &lua_timer::update);
+        luatimer.set_function("new", []() { return new lua_timer(); });
         luatimer.set_function("now", []() { return now(); });
         luatimer.set_function("now_ms", []() { return now_ms(); });
         luatimer.set_function("steady", []() { return steady(); });
         luatimer.set_function("steady_ms", []() { return steady_ms(); });
         luatimer.set_function("sleep", [](uint64_t ms) { return sleep(ms); });
-        luatimer.set_function("time", []() { return sol::as_returns(integer_vector({ now_ms(), now() })); });
-        luatimer.new_usertype<lua_timer>("lua_timer"
-            , "insert", &lua_timer::insert
-            , "update", &lua_timer::update
-            );
+        luatimer.set_function("time", [=]() {
+            luakit::variadic_results vr;
+            luakit::kit_state kit_state(L);
+            vr.push_back(kit_state.new_reference(now_ms()));
+            vr.push_back(kit_state.new_reference(now()));
+            return vr;
+        });
         return luatimer;
     }
 }
 
 extern "C" {
     LUALIB_API int luaopen_ltimer(lua_State* L) {
-        return sol::stack::call_lua(L, 1, ltimer::open_ltimer);
+        auto luatimer = ltimer::open_ltimer(L);
+        luatimer.push_stack();
+        return 1;
     }
 }
