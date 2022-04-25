@@ -23,7 +23,7 @@ namespace ltimer {
 
     class lua_timer {
     public:
-        luakit::reference update(lua_State* L, size_t elapse);
+        integer_vector update(size_t elapse);
         void insert(uint64_t timer_id, size_t escape);
 
     protected:
@@ -97,15 +97,14 @@ namespace ltimer {
         near[idx].clear();
     }
 
-    luakit::reference lua_timer::update(lua_State* L, size_t elapse) {
+    integer_vector lua_timer::update(size_t elapse) {
         integer_vector timers;
         execute(timers);
         for (size_t i = 0; i < elapse; i++) {
             shift();
             execute(timers);
         }
-        luakit::kit_state kit_state(L);
-        return kit_state.new_reference<integer_vector, uint64_t>(timers);
+        return timers;
     }
 
     luakit::lua_table open_ltimer(lua_State* L) {
@@ -119,11 +118,8 @@ namespace ltimer {
         luatimer.set_function("steady_ms", []() { return steady_ms(); });
         luatimer.set_function("sleep", [](uint64_t ms) { return sleep(ms); });
         luatimer.set_function("time", [=]() {
-            luakit::variadic_results vr;
             luakit::kit_state kit_state(L);
-            vr.push_back(kit_state.new_reference(now_ms()));
-            vr.push_back(kit_state.new_reference(now()));
-            return vr;
+            return kit_state.as_return(now_ms(), now());
         });
         return luatimer;
     }
@@ -132,7 +128,6 @@ namespace ltimer {
 extern "C" {
     LUALIB_API int luaopen_ltimer(lua_State* L) {
         auto luatimer = ltimer::open_ltimer(L);
-        luatimer.push_stack();
-        return 1;
+        return luatimer.push_stack();
     }
 }
